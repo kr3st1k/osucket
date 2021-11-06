@@ -10,7 +10,7 @@ namespace osucket
     class Program
     {
         static void Main(string[] args)
-        { 
+        {
             var server = new WebSocketServer("ws://0.0.0.0:13371");
             server.Start(socket =>
             {
