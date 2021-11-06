@@ -1,9 +1,9 @@
 ﻿using Fleck;
 using System;
-using System.Net.Sockets;
 using System.Threading;
+using System.Diagnostics;
 using System.Threading.Tasks;
-using TagLib.NonContainer;
+using OsuMemoryDataProvider;
 
 namespace osucket
 {
@@ -32,10 +32,16 @@ namespace osucket
         {
             while (true)
             {
-                socket.Send("test");
-                await Task.Delay(5000);
+                if(Process.GetProcessesByName("osu!").Length != 0)
+                {
+                    
+                    await socket.Send("{" + $"\"songString\": \"{OsuMemoryReader.Instance.GetSongString()}\"" + "}");
+                    
+                }
+                await Task.Delay(1000);
                 if (socket.IsAvailable == false)
                 {
+                    GC.Collect();
                     return;
                 }
             }
