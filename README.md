@@ -1,2 +1,3 @@
 # osucket
-websocket magic
+* Yet another osu! memory reader for overlays and stuff... 
+* *Uses [Piotrekol/OsuMemoryDataProvider](https://www.nuget.org/packages/OsuMemoryDataProvider)*
