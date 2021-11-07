@@ -3,17 +3,43 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Platforms>AnyCPU;x86;x64</Platforms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Fleck" Version="1.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="OsuMemoryDataProvider" Version="0.8.2" />
+    <PackageReference Include="OsuMemoryDataProvider" Version="0.7.1" />
     <PackageReference Include="ppy.osu.Game" Version="2021.1105.0" />
     <PackageReference Include="ppy.osu.Game.Rulesets.Catch" Version="2021.1105.0" />
     <PackageReference Include="ppy.osu.Game.Rulesets.Mania" Version="2021.1105.0" />
     <PackageReference Include="ppy.osu.Game.Rulesets.Osu" Version="2021.1105.0" />
     <PackageReference Include="ppy.osu.Game.Rulesets.Taiko" Version="2021.1105.0" />
+    <PackageReference Include="WebSocketSharp.NetCore" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
