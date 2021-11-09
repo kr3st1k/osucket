@@ -7,11 +7,17 @@ using OsuMemoryDataProvider;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using NUnit.Framework.Internal;
 using OsuMemoryDataProvider.OsuMemoryModels;
 using OsuMemoryDataProvider.OsuMemoryModels.Abstract;
 using OsuMemoryDataProvider.OsuMemoryModels.Direct;
 
+using osucket.PPCalculator;
+using osu.Game.Rulesets;
+using osu.Game.Rulesets.Osu;
+using osu.Game.Rulesets.Taiko;
+using osu.Game.Rulesets.Catch;
+using osu.Game.Rulesets.Mania;
+using System.IO;
 
 namespace osucket
 {
@@ -20,9 +26,8 @@ namespace osucket
         private StructuredOsuMemoryReader _sreader;
         public StructuredOsuMemoryReader Sreader
         {
-            get { return _sreader; }
-
-            set { _sreader = value; }
+            get => _sreader; 
+            set => _sreader = value; 
         }
 
         public T ReadProperty<T>(object readObj, string propName, T defaultValue = default) where T : struct
@@ -49,30 +54,21 @@ namespace osucket
             }
             return false;
         }
-        public int ReadInt(object readObj, string propName)
-            => ReadProperty<int>(readObj, propName, -5);
-        public UInt16 ReadShort(object readObj, string propName) => ReadProperty<UInt16>(readObj, propName);
-
+        public int ReadInt(object readObj, string propName) => ReadProperty<int>(readObj, propName, -5);
+        public ushort ReadUShort(object readObj, string propName) => ReadProperty<ushort>(readObj, propName);
+        public short ReadShort(object readObj, string propName) => ReadProperty<short>(readObj, propName);
         public float ReadFloat(object readObj, string propName) => ReadProperty<float>(readObj, propName, -5f);
-
         public string ReadString(object readObj, string propName) => ReadClassProperty<string>(readObj, propName, "INVALID READ");
 
     }
 
 
-    class Program
+    internal static class Program
     {
-        public enum OsuGameMode
+        internal static void Main(string[] args)
         {
-            std = 0,
-            taiko = 1,
-            fruits = 2,
-            mania = 3
-        }
-        static void Main(string[] args)
-        {
-            Int32 timer = 600;
-            bool showerrors = false;
+            var timer = 500;
+            var showerrors = true;
             Environment.GetCommandLineArgs().ToList().ForEach(x =>
             {
                 if (x.EndsWith("/?") || x.EndsWith("-h") || x.EndsWith("--h") || x.EndsWith("-help") ||
@@ -110,51 +106,147 @@ namespace osucket
             });
             Thread.Sleep(-1);
         }
-        
-        static async void GetMemoryInfo(IWebSocketConnection socket, int timer, bool showerrors)
+        internal static Ruleset getRuleset(int rulesetID)
+        {
+            switch (rulesetID)
+            {
+                case 0:
+                    return new OsuRuleset();
+                case 1:
+                    return new TaikoRuleset();
+                case 2:
+                    return new CatchRuleset();
+                case 3:
+                    return new ManiaRuleset();
+                default:
+                    throw new ArgumentOutOfRangeException("rulesetID");
+            }
+        }
+
+        internal static double GetAccuracy(Dictionary<string, dynamic> gameplay)
+        {
+            switch (gameplay["mode_int"])
+            {
+                case 0:
+                    return (100.00 * (6 * (double)gameplay["c300"] + 2 * (double)gameplay["c100"] + (double)gameplay["c50"]) / (6 * ((double)gameplay["c50"] + (double)gameplay["c100"] + (double)gameplay["c300"] + (double)gameplay["cMiss"])));
+                case 1:
+                    return (100.00 * (2 * (double)gameplay["c300"] + (double)gameplay["c100"]) / (2 * ((double)gameplay["c300"] + (double)gameplay["c100"] + (double)gameplay["cMiss"])));
+                case 2:
+                    return (100.00 * ((double)gameplay["c300"] + (double)gameplay["c100"] + (double)gameplay["c50"]) / ((double)gameplay["c300"] + (double)gameplay["c100"] + (double)gameplay["c50"] + (double)gameplay["cKatu"] + (double)gameplay["cMiss"]));
+                case 3:
+                    return (100.00 * (6 * (double)gameplay["cGeki"] + 6 * (double)gameplay["c300"] + 4 * (double)gameplay["cKatu"] + 2 * (double)gameplay["c100"] + (double)gameplay["c50"]) / (6 * ((double)gameplay["c50"] + (double)gameplay["c100"] + (double)gameplay["c300"] + (double)gameplay["cMiss"] + (double)gameplay["cGeki"] + (double)gameplay["cKatu"])));
+                default:
+                    throw new ArgumentOutOfRangeException("gamemode");
+            }
+        }
+
+        internal static async void GetMemoryInfo(IWebSocketConnection socket, int timer, bool showerrors)
         {
             Console.WriteLine("Connected!");
+            var baseAddresses = new OsuBaseAddresses();
             while (true)
             {
-                Process[] osu_process = Process.GetProcessesByName("osu!");
-                if (osu_process.Length != 0)
+                var osu_processes = Process.GetProcessesByName("osu!");
+                
+                if (osu_processes.Length == 0)
                 {
-                    try
+                    await Task.Delay(10000);
+                    continue;
+                }
+
+                using var osu_process = osu_processes[0];
+
+                try
+                {
+                    string osu_dir = Path.GetDirectoryName(osu_process.MainModule.FileName);
+                    StructuredOsuMemoryReader _sreader = StructuredOsuMemoryReader.Instance.GetInstanceForWindowTitleHint(osu_process.MainWindowTitle);
+                    MemoryReader _ssreader = new MemoryReader
                     {
-                        var baseAddresses = new OsuBaseAddresses();
-                        string osu_dir = osu_process[0].MainModule.FileName.Replace("osu!.exe", "");
-                        StructuredOsuMemoryReader _sreader = StructuredOsuMemoryReader.Instance.GetInstanceForWindowTitleHint(osu_process[0].MainWindowTitle);
-                        MemoryReader _ssreader = new MemoryReader
-                        {
-                            Sreader = _sreader
-                        };
+                        Sreader = _sreader
+                    };
 
 
-                        var res = new Dictionary<string, dynamic> { };
-                        var gameplay = new Dictionary<string, dynamic> { };
-                        var keyOverlay = new Dictionary<string, dynamic>
-                        {
-                            {"ck1", 0},
-                            {"bk1", false},
-                            {"ck2", 0},
-                            {"bk2", false},
-                            {"cm1", 0},
-                            {"bm1", false},
-                            {"cm2", 0},
-                            {"bm2", false}
-                        };
+                    var res = new Dictionary<string, dynamic> {
+                        { "StatusNumber", null }, 
+                        { "Status", null },
+                        { "GameModeNumberMenu", null },
+                        { "Song", null },
+                        { "SongTime", null },
+                        { "IsInterface", null },
+                        { "SkinName", null },
+                        { "GameModeMenu", null },
+                        { "SkinDir", null },
+                        { "MapDir", null },
+                        { "osuFile", null },
+                        { "cRetry", null },
+                        { "beatmapStatus_int", null },
+                        { "beatmapStatus", null },
+                        { "Gameplay", null },
+                        { "ResultScreen", null }
 
-                        res.Add("StatusNumber", OsuMemoryReader.Instance.GetCurrentStatus(out int num));
-                        res.Add("Status", Enum.GetName(typeof(OsuMemoryStatus), res["StatusNumber"]));
-                        res.Add("GameModeNumberMenu", OsuMemoryReader.Instance.ReadSongSelectGameMode());
-                        res.Add("Song", OsuMemoryReader.Instance.GetSongString());
-                        res.Add("SkinName", OsuMemoryReader.Instance.GetSkinFolderName());
-                        res.Add("GameModeMenu", Enum.GetName(typeof(OsuGameMode), res["GameModeNumberMenu"]));
-                        res.Add("SkinDir", $"{osu_dir}Skins\\{OsuMemoryReader.Instance.GetSkinFolderName()}\\");
-                        res.Add("MapDir", $"{osu_dir}{OsuMemoryReader.Instance.GetMapFolderName()}\\");
-                        res.Add("cRetry", OsuMemoryReader.Instance.GetRetrys());
-                        res.Add("beatmapStatus", _ssreader.ReadProperty<Int16>(baseAddresses.Beatmap, nameof(CurrentBeatmap.Status)));
-                        if (res["StatusNumber"] == OsuMemoryStatus.Playing)
+                    };
+                    var gameplay = new Dictionary<string, dynamic> {
+                        { "mode_int", null },
+                        { "keyOverlay", null },
+                        { "username", null },
+                        { "acc", null },
+                        { "c300", null },
+                        { "c100", null },
+                        { "c50", null },
+                        { "cMiss", null },
+                        { "cGeki", null },
+                        { "cKatu", null },
+                        { "combo", null },
+                        { "maxCombo", null },
+                        { "score", null },
+                        { "isReplay", null },
+                        { "HP", null },
+                        { "HPSmooth", null },
+                        { "mode", null },
+                        { "mods_int", null },
+                        { "mods", null },
+                        { "pp", null },
+                        { "HitErrors", null }
+                    };
+                    var keyOverlay = new Dictionary<string, dynamic>
+                    {
+                        {"ck1", 0},
+                        {"bk1", false},
+                        {"ck2", 0},
+                        {"bk2", false},
+                        {"cm1", 0},
+                        {"bm1", false},
+                        {"cm2", 0},
+                        {"bm2", false}
+                    };
+                    var pp = new Dictionary<string, dynamic> {
+                        {"pp", 0},
+                        {"fcpp", 0},
+                        {"sspp", 0 }
+                    };
+
+                    res["StatusNumber"] = OsuMemoryReader.Instance.GetCurrentStatus(out int num);
+                    res["Status"] = Enum.GetName(typeof(OsuMemoryStatus), res["StatusNumber"]);
+                    res["GameModeNumberMenu"] = OsuMemoryReader.Instance.ReadSongSelectGameMode();
+                    res["Song"] = OsuMemoryReader.Instance.GetSongString();
+                    res["SongTime"] = _ssreader.ReadInt(baseAddresses.GeneralData, nameof(GeneralData.AudioTime));
+                    res["IsInterface"] = _ssreader.ReadBool(baseAddresses.GeneralData, nameof(GeneralData.ShowPlayingInterface));
+                    res["SkinName"] = OsuMemoryReader.Instance.GetSkinFolderName();
+                    res["GameModeMenu"] = Enum.GetName(typeof(OsuGameMode), res["GameModeNumberMenu"]);
+                    res["SkinDir"] = Path.Join(osu_dir, "Skins", OsuMemoryReader.Instance.GetSkinFolderName());
+                    res["MapDir"] = Path.Join(osu_dir, "Songs", OsuMemoryReader.Instance.GetMapFolderName());
+                    res["osuFile"] = Path.Join(res["MapDir"], _ssreader.ReadString(baseAddresses.Beatmap, nameof(CurrentBeatmap.OsuFileName)));
+
+                    res["cRetry"] = OsuMemoryReader.Instance.GetRetrys();
+
+                    res["beatmapStatus_int"] = _ssreader.ReadShort(baseAddresses.Beatmap, nameof(CurrentBeatmap.Status));
+                    res["beatmapStatus"] = Enum.GetName(typeof(OsuBeatmapStatus), res["beatmapStatus_int"]);
+
+                    if (res["StatusNumber"] == OsuMemoryStatus.Playing)
+                    {
+                        gameplay["mode_int"] = _ssreader.ReadInt(baseAddresses.Player, nameof(Player.Mode));
+                        
+                        if (gameplay["mode_int"] == 0 || gameplay["mode_int"] == 2)
                         {
                             keyOverlay["ck1"] = _ssreader.ReadInt(baseAddresses.KeyOverlay, nameof(KeyOverlay.K1Count));
                             keyOverlay["ck2"] = _ssreader.ReadInt(baseAddresses.KeyOverlay, nameof(KeyOverlay.K2Count));
@@ -166,52 +258,127 @@ namespace osucket
                             keyOverlay["bm1"] = _ssreader.ReadBool(baseAddresses.KeyOverlay, nameof(KeyOverlay.M1Pressed));
                             keyOverlay["bm2"] = _ssreader.ReadBool(baseAddresses.KeyOverlay, nameof(KeyOverlay.M2Pressed));
 
-                            gameplay.Add("keyOverlay", keyOverlay);
-
-                            gameplay.Add("username", _ssreader.ReadString(baseAddresses.Player, nameof(Player.Username)));
-                            gameplay.Add("acc", _ssreader.ReadProperty<double>(baseAddresses.Player, nameof(Player.Accuracy)));
-                            gameplay.Add("c300", _ssreader.ReadShort(baseAddresses.Player, nameof(Player.Hit300)));
-                            gameplay.Add("c100", _ssreader.ReadShort(baseAddresses.Player, nameof(Player.Hit100)));
-                            gameplay.Add("c50", _ssreader.ReadShort(baseAddresses.Player, nameof(Player.Hit50)));
-                            gameplay.Add("cMiss", _ssreader.ReadShort(baseAddresses.Player, nameof(Player.HitMiss)));
-                            gameplay.Add("cGeki", _ssreader.ReadShort(baseAddresses.Player, nameof(Player.HitGeki)));
-                            gameplay.Add("cKatu", _ssreader.ReadShort(baseAddresses.Player, nameof(Player.HitKatu)));
-                            gameplay.Add("combo", _ssreader.ReadShort(baseAddresses.Player, nameof(Player.Combo)));
-                            gameplay.Add("maxCombo", _ssreader.ReadShort(baseAddresses.Player, nameof(Player.MaxCombo)));
-                            if (_sreader.TryReadProperty(baseAddresses.Player, nameof(Player.ScoreV2), out var score))
-                            {
-                                gameplay.Add("score", score);
-                            }
-
-                            gameplay.Add("isReplay", OsuMemoryReader.Instance.IsReplay());
-                            gameplay.Add("HP", _ssreader.ReadProperty<double>(baseAddresses.Player, nameof(Player.HP)));
-                            gameplay.Add("HPSmooth", _ssreader.ReadProperty<double>(baseAddresses.Player, nameof(Player.HPSmooth)));
-                            gameplay.Add("mode_int", _ssreader.ReadInt(baseAddresses.Player, nameof(Player.Mode)));
-                            gameplay.Add("mode", Enum.GetName(typeof(OsuGameMode), gameplay["mode_int"]));
-                            if (_sreader.TryReadProperty(baseAddresses.Player, nameof(Player.Mods), out var mods))
-                            {
-                                var _kok = (Mods) mods;
-                                var mods_int = _kok.Value;
-                                gameplay.Add("mods_int", mods_int);
-                                gameplay.Add("mods", $"{(ModsStr) mods_int}");
-                            }
-
-                            gameplay.Add("HitErrors", _ssreader.ReadClassProperty<List<int>>(baseAddresses.Player, nameof(Player.HitErrors)));
-                            res.Add("Gameplay", gameplay);
+                            gameplay["keyOverlay"] = keyOverlay;
                         }
 
-                        string data = JsonSerializer.Serialize(res);
+                        gameplay["username"] = _ssreader.ReadString(baseAddresses.Player, nameof(Player.Username));
+                        gameplay["acc"] =_ssreader.ReadProperty<double>(baseAddresses.Player, nameof(Player.Accuracy));
+                        gameplay["c300"] =_ssreader.ReadUShort(baseAddresses.Player, nameof(Player.Hit300));
+                        gameplay["c100"] =_ssreader.ReadUShort(baseAddresses.Player, nameof(Player.Hit100));
+                        gameplay["c50"] =_ssreader.ReadUShort(baseAddresses.Player, nameof(Player.Hit50));
+                        gameplay["cMiss"] =_ssreader.ReadUShort(baseAddresses.Player, nameof(Player.HitMiss));
+                        gameplay["cGeki"] =_ssreader.ReadUShort(baseAddresses.Player, nameof(Player.HitGeki));
+                        gameplay["cKatu"] =_ssreader.ReadUShort(baseAddresses.Player, nameof(Player.HitKatu));
+                        gameplay["combo"] =_ssreader.ReadUShort(baseAddresses.Player, nameof(Player.Combo));
+                        gameplay["maxCombo"] =_ssreader.ReadUShort(baseAddresses.Player, nameof(Player.MaxCombo));
+                        if (_sreader.TryReadProperty(baseAddresses.Player, nameof(Player.ScoreV2), out var score))
+                        {
+                            gameplay["score"] =score;
+                        }
 
-                        await socket.Send(data);
+                        gameplay["isReplay"] =OsuMemoryReader.Instance.IsReplay();
 
-                        res.Clear();
-                        gameplay.Clear();
-                        keyOverlay.Clear();
-                        osu_process[0].Dispose();
-                        GC.Collect();
+                        gameplay["HP"] =_ssreader.ReadProperty<double>(baseAddresses.Player, nameof(Player.HP));
+                        gameplay["HPSmooth"] =_ssreader.ReadProperty<double>(baseAddresses.Player, nameof(Player.HPSmooth));
+                        gameplay["mode"] =Enum.GetName(typeof(OsuGameMode), gameplay["mode_int"]);
+                         if (_sreader.TryReadProperty(baseAddresses.Player, nameof(Player.Mods), out var mods))
+                        {
+                            var _kok = (Mods) mods;
+                            var mods_int = _kok.Value;
+                            gameplay["mods_int"] =mods_int ;
+                            gameplay["mods"] =((ModsStr)mods_int).ToString();
+                        }
+                        if (gameplay["maxCombo"] != 0) {
+                            var calculator = PPCalculatorHelpers.GetPPCalculator(gameplay["mode_int"]);
+                            var kok = MapCache.GetBeatmap(res["osuFile"]);
+                            var mapinfo = kok.map;
+                            var playableMap = mapinfo.GetPlayableBeatmap(calculator.Ruleset.RulesetInfo);
+
+                            if (res["GameModeNumberMenu"] != 0 && mapinfo.RulesetID == 0)
+                            {
+
+                                Ruleset ruleset = getRuleset(res["GameModeNumberMenu"]);
+                                calculator = PPCalculatorHelpers.GetPPCalculator(res["GameModeNumberMenu"]);
+                                var converter = ruleset.CreateBeatmapConverter(playableMap);
+                                playableMap = converter.Convert();
+                                mapinfo = new PPCalculator.WorkingBeatmap(playableMap);
+                            }
+
+
+                            pp["pp"] = calculator.Calculate(mapinfo, res["SongTime"], gameplay["acc"] / 100, gameplay["maxCombo"], gameplay["cMiss"], gameplay["c50"], gameplay["mods"].Split(","), gameplay["score"]);
+                            if (gameplay["mode_int"] != 3) pp["fcpp"] = calculator.Calculate(mapinfo, gameplay["acc"] / 100, calculator.GetMaxCombo(playableMap), 0, 0, gameplay["mods"].Split(","), 1000000);
+                            pp["sspp"] = calculator.Calculate(mapinfo, 1, calculator.GetMaxCombo(playableMap), 0, 0, gameplay["mods"].Split(","), 1000000);
+                        }
+                        gameplay["pp"] =pp;
+
+
+                        gameplay["HitErrors"] =_ssreader.ReadClassProperty<List<int>>(baseAddresses.Player, nameof(Player.HitErrors));
+                        res["Gameplay"] =gameplay;
                     }
-                    catch (Exception exception)
+                    if (res["StatusNumber"] == OsuMemoryStatus.ResultsScreen)
                     {
+                        gameplay["username"] =_ssreader.ReadString(baseAddresses.ResultsScreen, nameof(ResultsScreen.Username));
+                        gameplay["c300"] =_ssreader.ReadUShort(baseAddresses.ResultsScreen, nameof(ResultsScreen.Hit300));
+                        gameplay["c100"] =_ssreader.ReadUShort(baseAddresses.ResultsScreen, nameof(ResultsScreen.Hit100));
+                        gameplay["c50"] =_ssreader.ReadUShort(baseAddresses.ResultsScreen, nameof(ResultsScreen.Hit50));
+                        gameplay["cMiss"] =_ssreader.ReadUShort(baseAddresses.ResultsScreen, nameof(ResultsScreen.HitMiss));
+                        gameplay["cGeki"] =_ssreader.ReadUShort(baseAddresses.ResultsScreen, nameof(ResultsScreen.HitGeki));
+                        gameplay["cKatu"] =_ssreader.ReadUShort(baseAddresses.ResultsScreen, nameof(ResultsScreen.HitKatu));
+                        gameplay["maxCombo"] =_ssreader.ReadUShort(baseAddresses.ResultsScreen, nameof(ResultsScreen.MaxCombo));
+                        if (_sreader.TryReadProperty(baseAddresses.ResultsScreen, nameof(Player.ScoreV2), out var score))
+                        {
+                            if (score is null)
+                            {
+                                _sreader.TryReadProperty(baseAddresses.ResultsScreen, nameof(Player.Score), out score);
+
+                            }
+                            gameplay["score"] =score;
+                        }
+                        gameplay["mode_int"] =_ssreader.ReadInt(baseAddresses.ResultsScreen, nameof(ResultsScreen.Mode));
+                        gameplay["mode"] =Enum.GetName(typeof(OsuGameMode), gameplay["mode_int"]);
+                        if (_sreader.TryReadProperty(baseAddresses.ResultsScreen, nameof(ResultsScreen.Mods), out var mods))
+                        {
+                            var _kok = (Mods)mods;
+                            var mods_int = _kok.Value;
+                            gameplay["mods_int"] =mods_int;
+                            gameplay["mods"] =$"{(ModsStr)mods_int}";
+                        }
+                        var calculator = PPCalculatorHelpers.GetPPCalculator(gameplay["mode_int"]);
+                        var kok = MapCache.GetBeatmap(res["osuFile"]);
+                        var mapinfo = kok.map;
+                        var playableMap = mapinfo.GetPlayableBeatmap(calculator.Ruleset.RulesetInfo);
+
+                        if (res["GameModeNumberMenu"] != 0 && mapinfo.RulesetID == 0)
+                        {
+
+                            Ruleset ruleset = getRuleset(res["GameModeNumberMenu"]);
+                            calculator = PPCalculatorHelpers.GetPPCalculator(res["GameModeNumberMenu"]);
+                            var converter = ruleset.CreateBeatmapConverter(playableMap);
+                            playableMap = converter.Convert();
+                            mapinfo = new PPCalculator.WorkingBeatmap(playableMap);
+                        }
+
+                        gameplay["acc"] =GetAccuracy(gameplay);
+
+
+                        gameplay["pp"] =calculator.Calculate(mapinfo,  gameplay["acc"] / 100, gameplay["maxCombo"], gameplay["cMiss"], gameplay["c50"], gameplay["mods"].Split(","), gameplay["score"]);
+
+                        res["ResultScreen"] =gameplay;
+                    }
+
+                    string data = JsonSerializer.Serialize(res);
+
+                    await socket.Send(data);
+                }
+                catch (Exception exception)
+                {
+                    if (exception.Message.Contains("ReadProcessMemory"))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+
                         if (showerrors)
                         {
                             Console.WriteLine(exception);
@@ -220,20 +387,11 @@ namespace osucket
                         {
                             Console.WriteLine("An unknown error has occurred. Ignoring...");
                         }
-                        GC.Collect();
                     }
                 }
-                else
-                {
-                    await Task.Delay(10000);
-                    GC.Collect();
-                }
+                
                 await Task.Delay(timer);
-                if (socket.IsAvailable == false)
-                {
-                    GC.Collect();
-                    return;
-                }
+                if (socket.IsAvailable == false) return;
             }
         }
     }

@@ -40,4 +40,22 @@ namespace osucket
         SpeedChanging = DT | HT | NC,
         MapChanging = HR | EZ | SpeedChanging
     }
+
+    public enum OsuGameMode
+    {
+        osu = 0,
+        taiko = 1,
+        fruits = 2,
+        mania = 3
+    }
+    public enum OsuBeatmapStatus
+    {
+        Ranked = 4,
+        Pending = 2,
+        Unsubmitted = 1,
+        Loved = 7,
+        Approved = 5
+    }
+
+
 }
