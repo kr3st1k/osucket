@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+
+  build:
+    name: Build for Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        configuration: [Release]
+
+        include:
+            - os: windows-latest
+              glob: osucket/bin/*.zip
+
+    env:
+      Solution_Name: osucket.sln                         # Replace with your solution name, i.e. MyWpfApp.sln.
+      Test_Project_Path: osucket\osucket.csproj 
+      
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # Install the .NET Core workload
+    - name: Install .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.0
+
+    # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v1.0.2
+
+    # Restore the application to populate the obj folder with RuntimeIdentifiers
+    - name: Restore the application
+      run: msbuild $env:Solution_Name /t:Restore /p:PublishProfile=osucket\Properties\PublishProfiles\x64.pubxml /p:Configuration=$env:Configuration
+      env:
+        Configuration: ${{ matrix.configuration }}
+
+    # Restore the application to populate the obj folder with RuntimeIdentifiers
+    - name: Compile the application
+      run: msbuild $env:Solution_Name /p:DeployOnBuild=true /p:PublishProfile=osucket\Properties\PublishProfiles\x64.pubxml /p:Configuration=$env:Configuration
+      env:
+        Configuration: ${{ matrix.configuration }}
+    
+    - name: x64 Archive
+    # You may pin to the exact commit or the version.
+    # uses: ihiroky/archive-action@e8b4644f992de8f7423e0bd7292c2e047ecf26ce
+      uses: ihiroky/archive-action@v1
+      with:
+      # Root directory.
+        root_dir: ./
+        # Base directory; common prefix of all files and directories in the archive, relative to root_dir.
+        base_dir: osucket/bin/Release/netcoreapp3.1/win-x64/ # optional, default is .
+        # Output file path. Supported extensions: zip, tar, tar.gz(tgz), tar.bz2(tbz2), tar.xz(txz)
+        file_path: osucket/bin/win-x64.zip # optional, default is output.zip
+    
+    
+    
+    # Restore the application to populate the obj folder with RuntimeIdentifiers
+    - name: Restore the application
+      run: msbuild $env:Solution_Name /t:Restore /p:PublishProfile=osucket\Properties\PublishProfiles\x86.pubxml /p:Configuration=$env:Configuration
+      env:
+        Configuration: ${{ matrix.configuration }}
+
+    # Restore the application to populate the obj folder with RuntimeIdentifiers
+    - name: Compile the application
+      run: msbuild $env:Solution_Name /p:DeployOnBuild=true /p:PublishProfile=osucket\Properties\PublishProfiles\x86.pubxml /p:Configuration=$env:Configuration
+      env:
+        Configuration: ${{ matrix.configuration }}
+    
+    - name: x86 Archive
+    # You may pin to the exact commit or the version.
+    # uses: ihiroky/archive-action@e8b4644f992de8f7423e0bd7292c2e047ecf26ce
+      uses: ihiroky/archive-action@v1
+      with:
+      # Root directory.
+        root_dir: ./
+        # Base directory; common prefix of all files and directories in the archive, relative to root_dir.
+        base_dir: osucket/bin/Release/netcoreapp3.1/win-x86/ # optional, default is .
+        # Output file path. Supported extensions: zip, tar, tar.gz(tgz), tar.bz2(tbz2), tar.xz(txz)
+        file_path: osucket/bin/win-x86.zip # optional, default is output.zip
+    - name: Upload binaries to release
+      shell: bash
+      run: gh release upload ${{ github.event.release.tag_name }} ${{ matrix.glob }}
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
