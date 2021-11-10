@@ -55,9 +55,9 @@ jobs:
       uses: ihiroky/archive-action@v1
       with:
       # Root directory.
-        root_dir: ./
+        root_dir: osucket/bin/Release/netcoreapp3.1/win-x64/ 
         # Base directory; common prefix of all files and directories in the archive, relative to root_dir.
-        base_dir: osucket/bin/Release/netcoreapp3.1/win-x64/ # optional, default is .
+        base_dir: . # optional, default is .
         # Output file path. Supported extensions: zip, tar, tar.gz(tgz), tar.bz2(tbz2), tar.xz(txz)
         file_path: osucket/bin/win-x64.zip # optional, default is output.zip
     
@@ -81,9 +81,9 @@ jobs:
       uses: ihiroky/archive-action@v1
       with:
       # Root directory.
-        root_dir: ./
+        root_dir: osucket/bin/Release/netcoreapp3.1/win-x86/
         # Base directory; common prefix of all files and directories in the archive, relative to root_dir.
-        base_dir: osucket/bin/Release/netcoreapp3.1/win-x86/ # optional, default is .
+        base_dir: .  # optional, default is .
         # Output file path. Supported extensions: zip, tar, tar.gz(tgz), tar.bz2(tbz2), tar.xz(txz)
         file_path: osucket/bin/win-x86.zip # optional, default is output.zip
     - name: Upload binaries to release
