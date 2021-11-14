@@ -17,6 +17,9 @@
 | `-port`      | 13371 |  `int` | WebSocket port (Standard value is 13371) |
 | `-showerrors`      | false   | `bool?` | Output errors |
 
+#### Parameters execution example
+`osucket.exe -timer=500 -port=13371 -showerrors`
+
 ## Authors
 
 - [@Kr3st1k](https://www.github.com/kr3st1k)
