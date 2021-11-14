@@ -13,9 +13,9 @@
 
 | Parameter | Standard value | Type     | Description                |
 | :-------- | :------------- | :------- | :------------------------- |
-| `timer (delay)` | 500 |  `int` | Delay in sending data |
-| `port`      | 13371 |  `int` | WebSocket port (Standard value is 13371) |
-| `showerrors`      | false   | `bool?` | Output errors |
+| `-timer (-delay)` | 500 |  `int` | Delay in sending data |
+| `-port`      | 13371 |  `int` | WebSocket port (Standard value is 13371) |
+| `-showerrors`      | false   | `bool?` | Output errors |
 
 ## Authors
 
