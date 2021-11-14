@@ -6,26 +6,16 @@ namespace osucket
     class MapCache
     {
       
-        static public ExpirableMap GetBeatmap(string osuDir)
+        static public WorkingBeatmap GetBeatmap(string osuDir)
         {
 
             var map = new WorkingBeatmap(File.OpenRead(osuDir));
-            var expirable = new ExpirableMap
-            {
-                map = map,
-                ID = 1
-            };
 
-            return expirable;
+            return map;
 
         }
 
 
-        public class ExpirableMap
-        {
-            public WorkingBeatmap map;
-            public int ID;
-        }
 
     }
 }

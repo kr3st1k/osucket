@@ -18,6 +18,7 @@ using osu.Game.Rulesets.Taiko;
 using osu.Game.Rulesets.Catch;
 using osu.Game.Rulesets.Mania;
 using System.IO;
+using osu.Game.Rulesets.Mods;
 
 namespace osucket
 {
@@ -139,7 +140,21 @@ namespace osucket
                     throw new ArgumentOutOfRangeException("gamemode");
             }
         }
+        internal static List<Mod> GetMods(string[] Mods, Ruleset ruleset)
+        {
+            var mods = new List<Mod>();
+            var availableMods = ruleset.CreateAllMods().ToList();
+            foreach (var modString in Mods)
+            {
+                Mod newMod = availableMods.FirstOrDefault(m => string.Equals(m.Acronym, modString, StringComparison.CurrentCultureIgnoreCase));
+                if (newMod == null)
+                    continue;
 
+                mods.Add(newMod);
+            }
+
+            return mods;
+        }
         internal static async void GetMemoryInfo(IWebSocketConnection socket, int timer, bool showerrors)
         {
             Console.WriteLine("Connected!");
@@ -172,7 +187,12 @@ namespace osucket
                         { "GameModeNumberMenu", null },
                         { "Song", null },
                         { "SongTime", null },
+                        { "SongLength", null },
+                        { "bg", null},
+                        { "beatmap_id", null},
                         { "IsInterface", null },
+                        { "StarRate", null},
+                        { "ModsMainMenuInt", null},
                         { "SkinName", null },
                         { "GameModeMenu", null },
                         { "SkinDir", null },
@@ -236,6 +256,30 @@ namespace osucket
                     res["SkinDir"] = Path.Join(osu_dir, "Skins", OsuMemoryReader.Instance.GetSkinFolderName());
                     res["MapDir"] = Path.Join(osu_dir, "Songs", OsuMemoryReader.Instance.GetMapFolderName());
                     res["osuFile"] = Path.Join(res["MapDir"], _ssreader.ReadString(baseAddresses.Beatmap, nameof(CurrentBeatmap.OsuFileName)));
+                    var mapinfo = res["osuFile"].Contains("nekodex - circles! (peppy).osu") ? null : MapCache.GetBeatmap(res["osuFile"]);
+                    
+                    
+                    if (mapinfo is not null)
+                    {
+                        res["SongLength"] = mapinfo.Length;
+                        res["bg"] = Path.Join(res["MapDir"], mapinfo.BackgroundFile);
+                        res["ModsMainMenuInt"] = OsuMemoryReader.Instance.GetMods();
+                        var ruleset = getRuleset(mapinfo.RulesetID);
+                        var playableMap = mapinfo.GetPlayableBeatmap(ruleset.RulesetInfo);
+                        if (res["GameModeNumberMenu"] != 0 && mapinfo.RulesetID == 0)
+                        {
+                            ruleset = getRuleset(res["GameModeNumberMenu"]);
+                            var calculator = PPCalculatorHelpers.GetPPCalculator(res["GameModeNumberMenu"]);
+                            var converter = ruleset.CreateBeatmapConverter(mapinfo);
+                            playableMap = converter.Convert();
+                            mapinfo = new PPCalculator.WorkingBeatmap(playableMap);
+                        }
+
+                        var mods_lazer = GetMods(((ModsStr)res["ModsMainMenuInt"]).ToString().Split(","), ruleset);
+                        res["StarRate"] = osucket.PPCalculator.DiffCalculator.GetStarRate(mods_lazer, mapinfo, ruleset);
+                        
+                    }
+                    res["beatmap_id"] = OsuMemoryReader.Instance.GetMapId() ;
 
                     res["cRetry"] = OsuMemoryReader.Instance.GetRetrys();
 
@@ -290,8 +334,6 @@ namespace osucket
                         }
                         if (gameplay["maxCombo"] != 0) {
                             var calculator = PPCalculatorHelpers.GetPPCalculator(gameplay["mode_int"]);
-                            var kok = MapCache.GetBeatmap(res["osuFile"]);
-                            var mapinfo = kok.map;
                             var playableMap = mapinfo.GetPlayableBeatmap(calculator.Ruleset.RulesetInfo);
 
                             if (res["GameModeNumberMenu"] != 0 && mapinfo.RulesetID == 0)
@@ -344,8 +386,6 @@ namespace osucket
                             gameplay["mods"] =$"{(ModsStr)mods_int}";
                         }
                         var calculator = PPCalculatorHelpers.GetPPCalculator(gameplay["mode_int"]);
-                        var kok = MapCache.GetBeatmap(res["osuFile"]);
-                        var mapinfo = kok.map;
                         var playableMap = mapinfo.GetPlayableBeatmap(calculator.Ruleset.RulesetInfo);
 
                         if (res["GameModeNumberMenu"] != 0 && mapinfo.RulesetID == 0)
