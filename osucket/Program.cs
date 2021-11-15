@@ -1,24 +1,28 @@
-﻿using Fleck;
-using System;
+﻿using System;
+using System.IO;
 using System.Threading;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using OsuMemoryDataProvider;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text.Json;
+
+using OsuMemoryDataProvider;
 using OsuMemoryDataProvider.OsuMemoryModels;
 using OsuMemoryDataProvider.OsuMemoryModels.Abstract;
 using OsuMemoryDataProvider.OsuMemoryModels.Direct;
 
-using osucket.PPCalculator;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Osu;
 using osu.Game.Rulesets.Taiko;
 using osu.Game.Rulesets.Catch;
 using osu.Game.Rulesets.Mania;
-using System.IO;
 using osu.Game.Rulesets.Mods;
+
+using Fleck;
+
+using osucket.PPCalculator;
 
 namespace osucket
 {
@@ -67,15 +71,18 @@ namespace osucket
     internal static class Program
     {
         internal static void Main(string[] args)
-        {
+        { 
+            Console.WriteLine("                                                                   \r\n                                                                  \r\n                                       `7MM                 mm    \r\n                                         MM                 MM    \r\n ,pW\"Wq.  ,pP\"Ybd `7MM  `7MM   ,p6\"bo    MM  ,MP' .gP\"Ya  mmMMmm  \r\n6W'   `Wb 8I   `\"   MM    MM  6M'  OO    MM ;Y   ,M'   Yb   MM    \r\n8M     M8 `YMMMa.   MM    MM  8M         MM;Mm   8M\"\"\"\"\"\"   MM    \r\nYA.   ,A9 L.   I8   MM    MM  YM.    ,   MM `Mb. YM.    ,   MM    \r\n `Ybmd9'  M9mmmP'   `Mbod\"YML. YMbmd'  .JMML. YA. `Mbmmd'   `Mbmo \r\n                                                                  \r\n                                                                  ");
+            var port = 13371;
             var timer = 500;
-            var showerrors = true;
+            var showerrors = false;
             Environment.GetCommandLineArgs().ToList().ForEach(x =>
             {
-                if (x.EndsWith("/?") || x.EndsWith("-h") || x.EndsWith("--h") || x.EndsWith("-help") ||
-                    x.EndsWith("--help"))
+                if (x.EndsWith("/?") || x.EndsWith("?") || x.EndsWith("-h") || x.EndsWith("--h") || x.EndsWith("-help") || x.EndsWith("--help"))
                 {
-                    Console.WriteLine(@"help");
+                    Console.WriteLine("-showerrors           Output errors\n" + 
+                                               "-port=13371           WebSocket port\n" +
+                                               "-timer=500            Delay in sending data (-delay=500) \n"); 
                     Environment.Exit(0);
                 }
                 if (x.StartsWith("/showerrors") || x.StartsWith("-showerrors") || x.StartsWith("--showerrors") ||
@@ -85,28 +92,75 @@ namespace osucket
                 }
                 try
                 {
+                    if (x.StartsWith("/port") || x.StartsWith("-port") || x.StartsWith("--port") ||
+                        x.StartsWith("-p") || x.StartsWith("--p") || x.StartsWith("/p"))
+                    {
+                        port = Convert.ToInt32(x.Split("=")[1]);
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine("Invalid port value, enter an integer value, standard port is installed.");
+                }
+                try
+                {
                     if (x.StartsWith("/timer") || x.StartsWith("-timer") || x.StartsWith("--timer") ||
-                        x.StartsWith("-t") || x.StartsWith("--t") || x.StartsWith("/t"))
+                        x.StartsWith("-t") || x.StartsWith("--t") || x.StartsWith("/t") || 
+                        x.StartsWith("/delay") || x.StartsWith("-delay") || x.StartsWith("--delay") ||
+                        x.StartsWith("-d") || x.StartsWith("--d") || x.StartsWith("/d"))
                     {
                         timer = Convert.ToInt32(x.Split("=")[1]);
                     }
                 }
                 catch
                 {
-                    Console.WriteLine("Invalid value, enter an integer value in milliseconds");
-                    Environment.Exit(0);
+                    Console.WriteLine("Invalid timer value, enter an integer value in milliseconds, standard delay(timer) is installed");
                 }
 
             });
-            var server = new WebSocketServer("ws://0.0.0.0:13371");
-            server.Start(socket =>
+            try
             {
-                socket.OnOpen = () => GetMemoryInfo(socket, timer, showerrors);
-                socket.OnClose = () => Console.WriteLine("Close!");
-                socket.OnMessage = message => socket.Send(message);
-            });
-            Thread.Sleep(-1);
+                var server = new WebSocketServer($"ws://0.0.0.0:{port}");
+                server.Start(socket =>
+                {
+                    socket.OnOpen = () => GetMemoryInfo(socket, timer, showerrors);
+                    socket.OnClose = () => Console.WriteLine("Close!");
+                    socket.OnMessage = message => socket.Send(message);
+                });
+                Thread.Sleep(-1);
+            }
+            catch (Exception ex)
+            {
+                if (ExceptionContainsErrorCode(ex, 10013))
+                {
+                    Console.WriteLine("This port is busy.");
+                }
+                else if (ex.Source.Contains("System.Private.Uri"))
+                {
+                    Console.WriteLine("You set the port value incorrectly. The number of ports is limited from 0 to 65535.");
+                }
+                else
+                {
+                    Console.WriteLine(ex);
+                }
+                Console.WriteLine("");
+                Console.WriteLine("The app will close after 15 seconds.");
+                Thread.Sleep(15000);
+            }
         }
+
+        private static bool ExceptionContainsErrorCode(Exception e, int ErrorCode)
+        {
+            Win32Exception winEx = e as Win32Exception;
+            if (winEx != null && ErrorCode == winEx.ErrorCode)
+                return true;
+
+            if (e.InnerException != null)
+                return ExceptionContainsErrorCode(e.InnerException, ErrorCode);
+
+            return false;
+        }
+
         internal static Ruleset getRuleset(int rulesetID)
         {
             switch (rulesetID)
