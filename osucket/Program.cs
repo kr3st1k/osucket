@@ -178,6 +178,29 @@ namespace osucket
             }
         }
 
+        internal static double CalcUR(List<int> HitError)
+        {
+            if (HitError == null || HitError.Count < 1)
+            {
+                return 0;
+            }
+
+            var totalAll = 0;
+            foreach (var item in HitError)
+            {
+                totalAll += item;
+            }
+            var average = totalAll / HitError.Count;
+            double variance = 0;
+            foreach (var item in HitError)
+            {
+                variance += Math.Pow(item-average, 2);
+            }
+            variance /= HitError.Count;
+
+            return Math.Sqrt(variance) * 10;
+        }
+
         internal static double GetAccuracy(Dictionary<string, dynamic> gameplay)
         {
             switch (gameplay["mode_int"])
@@ -263,16 +286,16 @@ namespace osucket
                         { "mode_int", null },
                         { "keyOverlay", null },
                         { "username", null },
-                        { "acc", null },
-                        { "c300", null },
-                        { "c100", null },
-                        { "c50", null },
-                        { "cMiss", null },
-                        { "cGeki", null },
-                        { "cKatu", null },
-                        { "combo", null },
-                        { "maxCombo", null },
-                        { "score", null },
+                        { "acc", 100 },
+                        { "c300", 0 },
+                        { "c100", 0 },
+                        { "c50", 0 },
+                        { "cMiss", 0 },
+                        { "cGeki", 0 },
+                        { "cKatu", 0 },
+                        { "combo", 0 },
+                        { "maxCombo", 0 },
+                        { "score", 0 },
                         { "isReplay", null },
                         { "HP", null },
                         { "HPSmooth", null },
@@ -280,7 +303,8 @@ namespace osucket
                         { "mods_int", null },
                         { "mods", null },
                         { "pp", null },
-                        { "HitErrors", null }
+                        { "HitErrors", null },
+                        { "UR", 0 }
                     };
                     var keyOverlay = new Dictionary<string, dynamic>
                     {
@@ -409,6 +433,7 @@ namespace osucket
 
 
                         gameplay["HitErrors"] =_ssreader.ReadClassProperty<List<int>>(baseAddresses.Player, nameof(Player.HitErrors));
+                        gameplay["UR"] = CalcUR(gameplay["HitErrors"]);
                         res["Gameplay"] =gameplay;
                     }
                     if (res["StatusNumber"] == OsuMemoryStatus.ResultsScreen)
