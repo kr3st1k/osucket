@@ -70,6 +70,7 @@ namespace osucket
 
     internal static class Program
     {
+        public static List<IWebSocketConnection> sockets = new List<IWebSocketConnection>();
         internal static void Main(string[] args)
         { 
             Console.WriteLine("                                                                   \r\n                                                                  \r\n                                       `7MM                 mm    \r\n                                         MM                 MM    \r\n ,pW\"Wq.  ,pP\"Ybd `7MM  `7MM   ,p6\"bo    MM  ,MP' .gP\"Ya  mmMMmm  \r\n6W'   `Wb 8I   `\"   MM    MM  6M'  OO    MM ;Y   ,M'   Yb   MM    \r\n8M     M8 `YMMMa.   MM    MM  8M         MM;Mm   8M\"\"\"\"\"\"   MM    \r\nYA.   ,A9 L.   I8   MM    MM  YM.    ,   MM `Mb. YM.    ,   MM    \r\n `Ybmd9'  M9mmmP'   `Mbod\"YML. YMbmd'  .JMML. YA. `Mbmmd'   `Mbmo \r\n                                                                  \r\n                                                                  ");
@@ -123,11 +124,12 @@ namespace osucket
                 var server = new WebSocketServer($"ws://0.0.0.0:{port}");
                 server.Start(socket =>
                 {
-                    socket.OnOpen = () => GetMemoryInfo(socket, timer, showerrors);
-                    socket.OnClose = () => Console.WriteLine("Close!");
+                    socket.OnOpen = () => { Console.WriteLine($"Connected. ip:{socket.ConnectionInfo.ClientIpAddress}:{socket.ConnectionInfo.ClientPort}"); sockets.Add(socket); };
+                    socket.OnClose = () => { Console.WriteLine($"Closed connection. ip:{socket.ConnectionInfo.ClientIpAddress}:{socket.ConnectionInfo.ClientPort}"); sockets.RemoveAt(sockets.IndexOf(socket)); };
                     socket.OnMessage = message => socket.Send(message);
                 });
-                Thread.Sleep(-1);
+
+                GetMemoryInfo(timer, showerrors);
             }
             catch (Exception ex)
             {
@@ -232,9 +234,8 @@ namespace osucket
 
             return mods;
         }
-        internal static async void GetMemoryInfo(IWebSocketConnection socket, int timer, bool showerrors)
+        internal static async void GetMemoryInfo(int timer, bool showerrors)
         {
-            Console.WriteLine("Connected!");
             var baseAddresses = new OsuBaseAddresses();
             while (true)
             {
@@ -242,7 +243,11 @@ namespace osucket
                 
                 if (osu_processes.Length == 0)
                 {
-                    await Task.Delay(10000);
+                    Thread.Sleep(10000);
+                    continue;
+                } else if (sockets.Count == 0)
+                {
+                    Thread.Sleep(5000);
                     continue;
                 }
 
@@ -335,20 +340,19 @@ namespace osucket
                     res["MapDir"] = Path.Join(osu_dir, "Songs", OsuMemoryReader.Instance.GetMapFolderName());
                     res["osuFile"] = Path.Join(res["MapDir"], _ssreader.ReadString(baseAddresses.Beatmap, nameof(CurrentBeatmap.OsuFileName)));
                     var mapinfo = res["osuFile"].Contains("nekodex - circles! (peppy).osu") ? null : MapCache.GetBeatmap(res["osuFile"]);
-                    
-                    
+
+                    var ruleset = mapinfo is not null ? getRuleset(mapinfo.RulesetID) : getRuleset(0);
+                    var playableMap = mapinfo is not null ? mapinfo.GetPlayableBeatmap(ruleset.RulesetInfo) : null;
                     if (mapinfo is not null)
                     {
                         res["SongLength"] = mapinfo.Length;
                         res["bg"] = Path.Join(res["MapDir"], mapinfo.BackgroundFile);
                         res["ModsMainMenuInt"] = OsuMemoryReader.Instance.GetMods();
-                        var ruleset = getRuleset(mapinfo.RulesetID);
-                        var playableMap = mapinfo.GetPlayableBeatmap(ruleset.RulesetInfo);
                         if (res["GameModeNumberMenu"] != 0 && mapinfo.RulesetID == 0)
                         {
                             ruleset = getRuleset(res["GameModeNumberMenu"]);
                             var calculator = PPCalculatorHelpers.GetPPCalculator(res["GameModeNumberMenu"]);
-                            var converter = ruleset.CreateBeatmapConverter(mapinfo);
+                            var converter = ruleset.CreateBeatmapConverter(playableMap);
                             playableMap = converter.Convert();
                             mapinfo = new PPCalculator.WorkingBeatmap(playableMap);
                         }
@@ -412,18 +416,6 @@ namespace osucket
                         }
                         if (gameplay["maxCombo"] != 0) {
                             var calculator = PPCalculatorHelpers.GetPPCalculator(gameplay["mode_int"]);
-                            var playableMap = mapinfo.GetPlayableBeatmap(calculator.Ruleset.RulesetInfo);
-
-                            if (res["GameModeNumberMenu"] != 0 && mapinfo.RulesetID == 0)
-                            {
-
-                                Ruleset ruleset = getRuleset(res["GameModeNumberMenu"]);
-                                calculator = PPCalculatorHelpers.GetPPCalculator(res["GameModeNumberMenu"]);
-                                var converter = ruleset.CreateBeatmapConverter(playableMap);
-                                playableMap = converter.Convert();
-                                mapinfo = new PPCalculator.WorkingBeatmap(playableMap);
-                            }
-
 
                             pp["pp"] = calculator.Calculate(mapinfo, res["SongTime"], gameplay["acc"] / 100, gameplay["maxCombo"], gameplay["cMiss"], gameplay["c50"], gameplay["mods"].Split(","), gameplay["score"]);
                             if (gameplay["mode_int"] != 3) pp["fcpp"] = calculator.Calculate(mapinfo, gameplay["acc"] / 100, calculator.GetMaxCombo(playableMap), 0, 0, gameplay["mods"].Split(","), 1000000);
@@ -465,17 +457,6 @@ namespace osucket
                             gameplay["mods"] =$"{(ModsStr)mods_int}";
                         }
                         var calculator = PPCalculatorHelpers.GetPPCalculator(gameplay["mode_int"]);
-                        var playableMap = mapinfo.GetPlayableBeatmap(calculator.Ruleset.RulesetInfo);
-
-                        if (res["GameModeNumberMenu"] != 0 && mapinfo.RulesetID == 0)
-                        {
-
-                            Ruleset ruleset = getRuleset(res["GameModeNumberMenu"]);
-                            calculator = PPCalculatorHelpers.GetPPCalculator(res["GameModeNumberMenu"]);
-                            var converter = ruleset.CreateBeatmapConverter(playableMap);
-                            playableMap = converter.Convert();
-                            mapinfo = new PPCalculator.WorkingBeatmap(playableMap);
-                        }
 
                         gameplay["acc"] =GetAccuracy(gameplay);
 
@@ -486,8 +467,9 @@ namespace osucket
                     }
 
                     string data = JsonSerializer.Serialize(res);
-
-                    await socket.Send(data);
+                    foreach(IWebSocketConnection socket in sockets) {
+                        await socket.Send(data);
+                    };
                 }
                 catch (Exception exception)
                 {
@@ -508,9 +490,8 @@ namespace osucket
                         }
                     }
                 }
-                
-                await Task.Delay(timer);
-                if (socket.IsAvailable == false) return;
+
+                Thread.Sleep(timer);
             }
         }
     }
