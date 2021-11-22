@@ -9,7 +9,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace osucket.PPCalculator
+namespace osucket.calculations.PPCalculator
 {
     public abstract class PPCalculator
     {

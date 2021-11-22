@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace osucket
+namespace osucket.calculations
 {
     [Flags]
     public enum ModsStr

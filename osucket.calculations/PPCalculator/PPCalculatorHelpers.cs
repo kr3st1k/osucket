@@ -1,6 +1,6 @@
 using System;
 
-namespace osucket.PPCalculator
+namespace osucket.calculations.PPCalculator
 {
     public class PPCalculatorHelpers
     {

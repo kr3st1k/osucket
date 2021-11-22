@@ -1,5 +1,5 @@
 using System.IO;
-using osucket.PPCalculator;
+using osucket.calculations.PPCalculator;
 
 namespace osucket
 {

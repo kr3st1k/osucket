@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using osu.Framework.Audio.Track;
+using osu.Framework.Graphics.Textures;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Formats;
 using osu.Game.Rulesets;
@@ -11,11 +13,9 @@ using osu.Game.Rulesets.Mania;
 using osu.Game.Rulesets.Osu;
 using osu.Game.Rulesets.Taiko;
 using osu.Game.IO;
-using osu.Framework.Audio.Track;
-using osu.Framework.Graphics.Textures;
 using osu.Game.Skinning;
 
-namespace osucket.PPCalculator
+namespace osucket.calculations.PPCalculator
 {
     public class WorkingBeatmap : osu.Game.Beatmaps.WorkingBeatmap
     {

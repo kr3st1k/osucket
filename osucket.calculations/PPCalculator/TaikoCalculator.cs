@@ -7,7 +7,7 @@ using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.Taiko;
 using osu.Game.Rulesets.Taiko.Objects;
 
-namespace osucket.PPCalculator
+namespace osucket.calculations.PPCalculator
 {
     public class TaikoCalculator : PPCalculator
     {

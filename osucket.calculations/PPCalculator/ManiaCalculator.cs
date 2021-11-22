@@ -6,7 +6,7 @@ using osu.Game.Rulesets.Mania.Objects;
 using osu.Game.Rulesets.Objects;
 using osu.Game.Rulesets.Scoring;
 
-namespace osucket.PPCalculator
+namespace osucket.calculations.PPCalculator
 {
     public class ManiaCalculator : PPCalculator
     {

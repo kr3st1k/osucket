@@ -7,7 +7,7 @@ using osu.Game.Rulesets.Catch.Objects;
 using System.Linq;
 using System;
 
-namespace osucket.PPCalculator
+namespace osucket.calculations.PPCalculator
 {
     public class CatchCalculator : PPCalculator
     {

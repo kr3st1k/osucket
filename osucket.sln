@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProcessMemoryDataFinder", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OsuMemoryDataProvider", "submodules\ProcessMemoryDataFinder\OsuMemoryDataProvider\OsuMemoryDataProvider.csproj", "{AAEE6572-4A3F-41DE-A00D-5E8BB6EBA9D9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "osucket.calculations", "osucket.calculations\osucket.calculations.csproj", "{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,6 +127,18 @@ Global
 		{AAEE6572-4A3F-41DE-A00D-5E8BB6EBA9D9}.Release|x64.Build.0 = Release|x64
 		{AAEE6572-4A3F-41DE-A00D-5E8BB6EBA9D9}.Release|x86.ActiveCfg = Release|x86
 		{AAEE6572-4A3F-41DE-A00D-5E8BB6EBA9D9}.Release|x86.Build.0 = Release|x86
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Debug|x64.Build.0 = Debug|Any CPU
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Debug|x86.Build.0 = Debug|Any CPU
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Release|x64.ActiveCfg = Release|Any CPU
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Release|x64.Build.0 = Release|Any CPU
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Release|x86.ActiveCfg = Release|Any CPU
+		{1D4024D1-A9F5-4DD2-961D-0550AB2585D9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

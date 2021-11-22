@@ -7,7 +7,7 @@ using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.Osu;
 using osu.Game.Rulesets.Osu.Objects;
 
-namespace osucket.PPCalculator
+namespace osucket.calculations.PPCalculator
 {
     public class OsuCalculator : PPCalculator
     {

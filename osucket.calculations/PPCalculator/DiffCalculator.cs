@@ -4,7 +4,7 @@ using System.Linq;
 using osu.Game.Rulesets;
 using osu.Game.Utils;
 
-namespace osucket.PPCalculator
+namespace osucket.calculations.PPCalculator
 {
     class DiffCalculator
 
