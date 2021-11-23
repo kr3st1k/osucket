@@ -36,8 +36,7 @@
 
   <ItemGroup>
 
-    <ProjectReference Include="..\osucket.calculations\osucket.calculations.csproj" />
-  <ProjectReference Include="..\submodules\osu\osu.Game\osu.Game.csproj" />
+    <ProjectReference Include="..\osucket.calculations\osucket.calculations.csproj" excludeAssets="all"/>
   </ItemGroup>
 
   </Project>
