@@ -1,21 +1,11 @@
 using System.IO;
-using osucket.calculations.PPCalculator;
+using osucket.Calculations.OsuPerformanceCalculator;
 
-namespace osucket
+namespace osucket.Calculations
 {
-    class MapCache
-    {
-      
-        static public WorkingBeatmap GetBeatmap(string osuDir)
-        {
-
-            var map = new WorkingBeatmap(File.OpenRead(osuDir));
-
-            return map;
-
-        }
-
-
-
-    }
+	internal static class MapCache
+	{
+		private static WorkingBeatmap _workingBeatMap;
+		public static WorkingBeatmap GetBeatMap(string file) => _workingBeatMap ??= new WorkingBeatmap(File.OpenRead(file));
+	}
 }
