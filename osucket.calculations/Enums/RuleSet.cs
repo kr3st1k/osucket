@@ -1,6 +1,6 @@
 ﻿namespace osucket.Calculations.Enums
 {
-	internal enum RuleSet
+	public enum RuleSet
 	{
 		Osu = 0,
 		Taiko = 1,

@@ -1,16 +1,16 @@
 ﻿namespace osucket.Calculations.Models
 {
-	internal class OsuKey
+	public class OsuKey
 	{
-		internal int CountKeyLeft { get; set; }
-		internal int CountKeyRight { get; set; }
-		internal int CountMouseLeft { get; set; }
-		internal int CountMouseRight { get; set; }
+		public int CountKeyLeft { get; set; }
+		public int CountKeyRight { get; set; }
+		public int CountMouseLeft { get; set; }
+		public int CountMouseRight { get; set; }
 		
-		internal bool CountPressedKeyLeft { get; set; }
-		internal bool CountPressedKeyRight { get; set; }
-		internal bool CountPressedMouseLeft { get; set; }
-		internal bool CountPressedMouseRight { get; set; }
+		public bool CountPressedKeyLeft { get; set; }
+		public bool CountPressedKeyRight { get; set; }
+		public bool CountPressedMouseLeft { get; set; }
+		public bool CountPressedMouseRight { get; set; }
 
 	}
 }

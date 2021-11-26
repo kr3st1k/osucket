@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using osu.Framework;
 using osu.Game.Beatmaps;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Catch;
@@ -50,24 +51,24 @@ namespace osucket.Calculations
 			return Math.Sqrt(variance) * 10;
 		}
 
-		private static double GetAccuracy(IReadOnlyDictionary<string, dynamic> gameplay)
+		private static double GetAccuracy(GamePlay gameplay)
 		{
-			return gameplay["mode_int"] switch
+			return gameplay.GameMode switch
 			{
-				0 => 100.00 *
-				     (6 * (double) gameplay["c300"] + 2 * (double) gameplay["c100"] + (double) gameplay["c50"]) /
-				     (6 * ((double) gameplay["c50"] + (double) gameplay["c100"] + (double) gameplay["c300"] +
-				           (double) gameplay["cMiss"])),
-				1 => 100.00 * (2 * (double) gameplay["c300"] + (double) gameplay["c100"]) / (2 *
-					((double) gameplay["c300"] + (double) gameplay["c100"] + (double) gameplay["cMiss"])),
-				2 => 100.00 * ((double) gameplay["c300"] + (double) gameplay["c100"] + (double) gameplay["c50"]) /
-				     ((double) gameplay["c300"] + (double) gameplay["c100"] + (double) gameplay["c50"] +
-				      (double) gameplay["cKatu"] + (double) gameplay["cMiss"]),
-				3 => 100.00 *
-					(6 * (double) gameplay["cGeki"] + 6 * (double) gameplay["c300"] + 4 * (double) gameplay["cKatu"] +
-					 2 * (double) gameplay["c100"] + (double) gameplay["c50"]) / (6 * ((double) gameplay["c50"] +
-						(double) gameplay["c100"] + (double) gameplay["c300"] + (double) gameplay["cMiss"] +
-						(double) gameplay["cGeki"] + (double) gameplay["cKatu"])),
+				RuleSet.Osu => 100.00 *
+				                (6 * (double) gameplay.Count300 + 2 * (double) gameplay.Count100 + (double) gameplay.Count50) /
+				                (6 * ((double) gameplay.Count50 + (double) gameplay.Count100 + (double) gameplay.Count300 +
+				                      (double) gameplay.CountMiss)),
+				RuleSet.Taiko => 100.00 * (2 * (double) gameplay.Count300 + (double) gameplay.Count100) / (2 *
+					((double) gameplay.Count300 + (double) gameplay.Count100 + (double) gameplay.CountMiss)),
+				RuleSet.Fruits => 100.00 * ((double) gameplay.Count300 + (double) gameplay.Count100 + (double) gameplay.Count50) /
+				               ((double) gameplay.Count300 + (double) gameplay.Count100 + (double) gameplay.Count50 +
+				                (double) gameplay.CountKatu + (double) gameplay.CountGeki),
+				RuleSet.Mania => 100.00 *
+					(6 * (double) gameplay.CountGeki + 6 * (double) gameplay.Count300 + 4 * (double) gameplay.CountKatu +
+					 2 * (double) gameplay.Count100 + (double) gameplay.Count50) / (6 * ((double) gameplay.Count50 +
+						(double) gameplay.Count100 + (double) gameplay.Count300 + (double) gameplay.CountMiss +
+						(double) gameplay.CountGeki + (double) gameplay.CountKatu)),
 				_ => throw new ArgumentOutOfRangeException("gameplay")
 			};
 		}
@@ -111,22 +112,22 @@ namespace osucket.Calculations
 			
 			WorkingBeatmap currentBeatMap = general.MapFile.Contains("nekodex - circles! (peppy).osu") ? null : MapCache.GetBeatMap(general.MapFile);
 
+			var ruleSet = currentBeatMap != null ? GetRuleset((RuleSet)currentBeatMap.RulesetID) : GetRuleset(0);
+			var playableBeatMap = currentBeatMap != null ? currentBeatMap.GetPlayableBeatmap(ruleSet.RulesetInfo) : null;
+			
 			if (currentBeatMap is not null)
 			{	
-				Ruleset ruleSet = GetRuleset((RuleSet)currentBeatMap.RulesetID);
-				IBeatmap playableBeatMap = currentBeatMap.GetPlayableBeatmap(ruleSet.RulesetInfo);
-
 				general.SongLength = currentBeatMap.Length;
 				general.BackgroundFile = Path.Join(general.MapDirectory, currentBeatMap.BackgroundFile);
 
-				if (general.MenuRuleSet == RuleSet.Osu && currentBeatMap.RulesetID == 0)
+				if (general.MenuRuleSet != RuleSet.Osu && currentBeatMap.RulesetID == 0)
 				{
 					ruleSet = GetRuleset(general.MenuRuleSet); // TODO: use extension method
 					// PPCalculator calculator = PpCalculatorHelpers.GetPpCalculator(general.MenuRuleSet);
 					currentBeatMap = new WorkingBeatmap(ruleSet.CreateBeatmapConverter(playableBeatMap).Convert());
 
 				}
-				var lazerMods = GetMods(general.MenuMods.ToString().Split(","), ruleSet);
+				var lazerMods = GetMods(((Enums.Mods)general.MenuMods).ToString().Split(","), ruleSet);
 				general.MapDifficulty = DiffCalculator.GetStarRate(lazerMods, currentBeatMap, ruleSet);
 
 			}
@@ -136,7 +137,7 @@ namespace osucket.Calculations
 				
 				gamePlay.GameMode = (RuleSet)memoryReader.ReadInt(BaseAddresses.Player, nameof(Player.Mode));
 
-				if (gamePlay.GameMode is  RuleSet.Taiko or RuleSet.Fruits)
+				if (gamePlay.GameMode is  RuleSet.Osu or RuleSet.Fruits)
 				{
 					osuKey.CountKeyLeft = 
 						memoryReader.ReadInt(BaseAddresses.KeyOverlay, nameof(KeyOverlay.K1Count));
@@ -185,15 +186,24 @@ namespace osucket.Calculations
 				gamePlay.HealthSmooth =
 					memoryReader.ReadProperty<double>(BaseAddresses.Player, nameof(Player.HPSmooth));
 				
-				if (structuredOsuMemoryReader.TryReadProperty(BaseAddresses.Player, nameof(Player.ScoreV2), out object score)) 
+				if (structuredOsuMemoryReader.TryReadProperty(BaseAddresses.Player, nameof(Player.ScoreV2),
+					out object score))
+				{
+					if (score is null)
+						structuredOsuMemoryReader.TryReadProperty(BaseAddresses.Player, nameof(Player.Score),
+							out score);
 					gamePlay.Score = (int)score;
-				if (structuredOsuMemoryReader.TryReadProperty(BaseAddresses.Player, nameof(Player.Mods), out object mods))
-					gamePlay.Mods = (Enums.Mods)mods;
+				}
+				if (structuredOsuMemoryReader.TryReadProperty(BaseAddresses.Player, nameof(Player.Mods),
+					out object mods))
+					gamePlay.Mods = ((Enums.Mods)((Mods)mods).Value);
+				
 
 
 				if (gamePlay.MaxCombo > 0)
 				{
 					PPCalculator calculator = PpCalculatorHelpers.GetPpCalculator(gamePlay.GameMode);
+					
 					performance.Performance =  calculator.Calculate(
 								currentBeatMap, 
 								general.AudioPosition, 
@@ -214,84 +224,83 @@ namespace osucket.Calculations
 							calculator.GetMaxCombo(playableBeatMap),
 							0, 
 							0, 
-							gamePlayData["mods"].Split(","), 
+							string.Join(",",Enum.GetValues(typeof(Enums.Mods)).Cast<Enum>().Where(value => gamePlay.Mods.HasFlag(value))).Split(","), 
 							1000000
 							);
-						performance["sspp"] = calculator.Calculate(currentBeatMap, 1, calculator.GetMaxCombo(playableMap), 0, 0,
-							gamePlayData["mods"].Split(","), 1000000);
 
 					}
-					if (gamePlayData["mode_int"] != 3)
-						performance["fcpp"] = calculator.Calculate(currentBeatMap, gamePlayData["acc"] / 100,
-							calculator.GetMaxCombo(playableMap), 0, 0, gamePlayData["mods"].Split(","), 1000000);
-					performance["sspp"] = calculator.Calculate(currentBeatMap, 1, calculator.GetMaxCombo(playableMap), 0, 0,
-						gamePlayData["mods"].Split(","), 1000000);
+					performance.SuperSkillPerformance = calculator.Calculate(
+						currentBeatMap, 
+						1, 
+						calculator.GetMaxCombo(playableBeatMap), 
+						0, 
+						0,
+						string.Join(",",Enum.GetValues(typeof(Enums.Mods)).Cast<Enum>().Where(value => gamePlay.Mods.HasFlag(value))).Split(","), 
+						1000000);
 
 				}
-				if (gamePlayData["maxCombo"] != 0)
-				{
-					dynamic calculator = PpCalculatorHelpers.GetPpCalculator(gamePlayData["mode_int"]);
 
-					performance["pp"] = calculator.Calculate(currentBeatMap, gameData["SongTime"], gamePlayData["acc"] / 100,
-						gamePlayData["maxCombo"], gamePlayData["cMiss"], gamePlayData["c50"], gamePlayData["mods"].Split(","),
-						gamePlayData["score"]);
-					if (gamePlayData["mode_int"] != 3)
-						performance["fcpp"] = calculator.Calculate(currentBeatMap, gamePlayData["acc"] / 100,
-							calculator.GetMaxCombo(playableMap), 0, 0, gamePlayData["mods"].Split(","), 1000000);
-					performance["sspp"] = calculator.Calculate(currentBeatMap, 1, calculator.GetMaxCombo(playableMap), 0, 0,
-						gamePlayData["mods"].Split(","), 1000000);
-				}
-
-				gamePlayData["pp"] = performance;
+				gamePlay.PerformancePoints = performance;
 
 
-				gamePlayData["HitErrors"] =
+				gamePlay.HitError =
 					memoryReader.ReadClassProperty<List<int>>(BaseAddresses.Player, nameof(Player.HitErrors));
-				gamePlayData["UR"] = CalculateUnstableRate(gamePlayData["HitErrors"]);
-				gameData["Gameplay"] = gamePlayData;
+				gamePlay.UnstableRate = CalculateUnstableRate(gamePlay.HitError);
+				general.Gameplay = gamePlay;
 			}
 
-			if (gameData["StatusNumber"] == OsuMemoryStatus.ResultsScreen)
+			if (general.OsuMemoryStatus == OsuMemoryStatus.ResultsScreen)
 			{
-				gamePlayData["username"] =
+				gamePlay.Username =
 					memoryReader.ReadString(BaseAddresses.ResultsScreen, nameof(ResultsScreen.Username));
-				gamePlayData["c300"] = memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.Hit300));
-				gamePlayData["c100"] = memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.Hit100));
-				gamePlayData["c50"] = memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.Hit50));
-				gamePlayData["cMiss"] = memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.HitMiss));
-				gamePlayData["cGeki"] = memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.HitGeki));
-				gamePlayData["cKatu"] = memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.HitKatu));
-				gamePlayData["maxCombo"] =
+				gamePlay.Count300 = 
+					memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.Hit300));
+				gamePlay.Count100 = 
+					memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.Hit100));
+				gamePlay.Count50 = 
+					memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.Hit50));
+				gamePlay.CountMiss = 
+					memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.HitMiss));
+				gamePlay.CountGeki = 
+					memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.HitGeki));
+				gamePlay.CountKatu = 
+					memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.HitKatu));
+				gamePlay.MaxCombo =
 					memoryReader.ReadUShort(BaseAddresses.ResultsScreen, nameof(ResultsScreen.MaxCombo));
-				if (structuredOsuMemoryReader.TryReadProperty(BaseAddresses.ResultsScreen, nameof(Player.ScoreV2), out object score))
+
+				if (structuredOsuMemoryReader.TryReadProperty(BaseAddresses.ResultsScreen, nameof(Player.ScoreV2),
+					out object score))
 				{
 					if (score is null)
-						structuredOsuMemoryReader.TryReadProperty(BaseAddresses.ResultsScreen, nameof(Player.Score), out score);
-					gamePlayData["score"] = score;
+						structuredOsuMemoryReader.TryReadProperty(BaseAddresses.ResultsScreen, nameof(Player.Score),
+							out score);
+					gamePlay.Score = (int)score;
 				}
+				if (structuredOsuMemoryReader.TryReadProperty(BaseAddresses.ResultsScreen, nameof(Player.Mods),
+					out object mods))
+					gamePlay.Mods = ((Enums.Mods)((Mods)mods).Value);
+				
+				gamePlay.GameMode = (RuleSet)memoryReader.ReadInt(BaseAddresses.ResultsScreen, nameof(Player.Mode));
 
-				gamePlayData["mode_int"] = memoryReader.ReadInt(BaseAddresses.ResultsScreen, nameof(ResultsScreen.Mode));
-				gamePlayData["mode"] = Enum.GetName(typeof(OsuGameMode), gamePlayData["mode_int"]);
-				if (structuredOsuMemoryReader.TryReadProperty(BaseAddresses.ResultsScreen, nameof(ResultsScreen.Mods), out object mods))
-				{
-					var kok = (Mods) mods;
-					int modsInt = kok.Value;
-					gamePlayData["mods_int"] = modsInt;
-					gamePlayData["mods"] = $"{(Enums.Mods) modsInt}";
-				}
+				PPCalculator calculator = PpCalculatorHelpers.GetPpCalculator(gamePlay.GameMode);
 
-				PPCalculator calculator = PpCalculatorHelpers.GetPpCalculator(gamePlayData["mode_int"]);
-
-				gamePlayData["acc"] = GetAccuracy(gamePlayData);
+				gamePlay.Accuracy = 
+					GetAccuracy(gamePlay);
 
 
-				gamePlayData["pp"] = calculator.Calculate(currentBeatMap, gamePlayData["acc"] / 100, gamePlayData["maxCombo"],
-					gamePlayData["cMiss"], gamePlayData["c50"], gamePlayData["mods"].Split(","), gamePlayData["score"]);
-
-				gameData["ResultScreen"] = gamePlayData;
+				performance.Performance = calculator.Calculate(
+					currentBeatMap, 
+					gamePlay.Accuracy / 100, 
+					gamePlay.MaxCombo,
+					gamePlay.CountMiss, 
+					gamePlay.Count50, 
+					string.Join(",",Enum.GetValues(typeof(Enums.Mods)).Cast<Enum>().Where(value => gamePlay.Mods.HasFlag(value))).Split(","), 
+					gamePlay.Score);
+				gamePlay.PerformancePoints = performance;
+				general.ResultScreen = gamePlay;
 			}
 
-			return JsonSerializer.Serialize(gameData);
+			return JsonSerializer.Serialize(general);
 		}
 	}
 }

@@ -1,6 +1,6 @@
 ﻿namespace osucket.Calculations.Enums
 {
-	internal enum SubmissionStatus
+	public enum SubmissionStatus
 	{
 		Ranked = 4,
 		Pending = 2,

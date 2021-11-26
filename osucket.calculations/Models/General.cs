@@ -3,27 +3,27 @@ using OsuMemoryDataProvider;
 
 namespace osucket.Calculations.Models
 {
-	internal class General
+	public class General
 	{
-		internal OsuMemoryStatus OsuMemoryStatus { get; set; }
-		internal SubmissionStatus SubmissionStatus { get; set; }
-		internal RuleSet MenuRuleSet { get; set; }
+		public OsuMemoryStatus OsuMemoryStatus { get; set; }
+		public SubmissionStatus SubmissionStatus { get; set; }
+		public RuleSet MenuRuleSet { get; set; }
 
-		internal string Gameplay { get; set; } //?
-		internal string ResultScreen { get; set; } //?
-		internal string Song { get; set; }
-		internal string BackgroundFile { get; set; }
-		internal string SkinName { get; set; }
-		internal string SkinDirectory { get; set; }
-		internal string MapDirectory { get; set; }
-		internal string MapFile { get; set; }
-		internal string MapDifficulty { get; set; }
-		internal int AudioPosition { get; set; }
-		internal int BeatMapId { get; set; }
-		internal int MenuMods { get; set; }
-		internal int CountRetries { get; set; }
-		internal bool IsInterface { get; set; }
-		internal double SongLength { get; set; }
+		public GamePlay Gameplay { get; set; } //?
+		public GamePlay ResultScreen { get; set; } //?
+		public string Song { get; set; }
+		public string BackgroundFile { get; set; }
+		public string SkinName { get; set; }
+		public string SkinDirectory { get; set; }
+		public string MapDirectory { get; set; }
+		public string MapFile { get; set; }
+		public string MapDifficulty { get; set; }
+		public int AudioPosition { get; set; }
+		public int BeatMapId { get; set; }
+		public int MenuMods { get; set; }
+		public int CountRetries { get; set; }
+		public bool IsInterface { get; set; }
+		public double SongLength { get; set; }
 
 	}
 }

@@ -3,7 +3,7 @@
 namespace osucket.Calculations.Enums
 {
 	[Flags]
-	internal enum Mods
+	public enum Mods
 	{
 		Nm = 0,
 		Nf = 1 << 0,

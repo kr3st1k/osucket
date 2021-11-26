@@ -13,7 +13,7 @@ namespace OsuPerformanceCalculator
 	{
 		public static string GetStarRate(List<Mod> mods, WorkingBeatmap beatmap, Ruleset ruleset)
 		{
-			var modsShish = TrimNonDifficultyAdjustmentMods(ruleset, mods.ToArray(), beatmap);
+			Mod[] modsShish = TrimNonDifficultyAdjustmentMods(ruleset, mods.ToArray(), beatmap);
 			DifficultyAttributes attributes = ruleset.CreateDifficultyCalculator(beatmap).Calculate(modsShish);
 
 			return attributes.StarRating.ToString("N2");

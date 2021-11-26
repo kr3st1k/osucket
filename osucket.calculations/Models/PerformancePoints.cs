@@ -2,8 +2,8 @@
 {
 	public class PerformancePoints
 	{
-		internal double Performance { get; set; }
-		internal double FullComboPerformance { get; set; }
-		internal double SuperSkillPerformance { get; set; }
+		public double Performance { get; set; }
+		public double FullComboPerformance { get; set; }
+		public double SuperSkillPerformance { get; set; }
 	}
 }
