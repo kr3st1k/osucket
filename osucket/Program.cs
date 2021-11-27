@@ -5,13 +5,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Fleck;
 
 namespace osucket
 {
 	internal static class Program
 	{
-		public static List<IWebSocketConnection> sockets = new();
+		private static List<IWebSocketConnection> sockets = new();
 
 		internal static void Main(string[] args)
 		{
@@ -19,7 +20,7 @@ namespace osucket
 				"                                                                   \r\n                                                                  \r\n                                       `7MM                 mm    \r\n                                         MM                 MM    \r\n ,pW\"Wq.  ,pP\"Ybd `7MM  `7MM   ,p6\"bo    MM  ,MP' .gP\"Ya  mmMMmm  \r\n6W'   `Wb 8I   `\"   MM    MM  6M'  OO    MM ;Y   ,M'   Yb   MM    \r\n8M     M8 `YMMMa.   MM    MM  8M         MM;Mm   8M\"\"\"\"\"\"   MM    \r\nYA.   ,A9 L.   I8   MM    MM  YM.    ,   MM `Mb. YM.    ,   MM    \r\n `Ybmd9'  M9mmmP'   `Mbod\"YML. YMbmd'  .JMML. YA. `Mbmmd'   `Mbmo \r\n                                                                  \r\n                                                                  ");
 			var port = 13371;
 			var timer = 500;
-			var showerrors = false;
+			var showErrors = false;
 			Environment.GetCommandLineArgs().ToList().ForEach(x =>
 			{
 				if (x.EndsWith("/?") || x.EndsWith("?") || x.EndsWith("-h") || x.EndsWith("--h") ||
@@ -33,7 +34,7 @@ namespace osucket
 
 				if (x.StartsWith("/showerrors") || x.StartsWith("-showerrors") || x.StartsWith("--showerrors") ||
 				    x.StartsWith("-se") || x.StartsWith("--se") || x.StartsWith("/se"))
-					showerrors = true;
+					showErrors = true;
 				try
 				{
 					if (x.StartsWith("/port") || x.StartsWith("-port") || x.StartsWith("--port") ||
@@ -78,8 +79,7 @@ namespace osucket
 					};
 					socket.OnMessage = message => socket.Send(message);
 				});
-
-				GetMemoryInfo(timer, showerrors);
+				Task.Run(() => GetMemoryInfo(timer, showErrors)).Wait();
 			}
 			catch (Exception ex)
 			{
@@ -98,40 +98,37 @@ namespace osucket
 
 		private static bool ExceptionContainsErrorCode(Exception e, int ErrorCode)
 		{
-			var winEx = e as Win32Exception;
-			if (winEx != null && ErrorCode == winEx.ErrorCode)
+			if (e is Win32Exception winEx && ErrorCode == winEx.ErrorCode)
 				return true;
 
-			if (e.InnerException != null)
-				return ExceptionContainsErrorCode(e.InnerException, ErrorCode);
-
-			return false;
+			return e.InnerException != null && ExceptionContainsErrorCode(e.InnerException, ErrorCode);
 		}
 
-		internal static async void GetMemoryInfo(int timer, bool showerrors)
+		private static async Task GetMemoryInfo(int timer, bool showerrors)
 		{
-			while (true)
+			while(true)
 			{
-				var osu_processes = Process.GetProcessesByName("osu!");
+				var osuProcesses = Process.GetProcessesByName("osu!");
 
-				if (osu_processes.Length == 0)
+				if (osuProcesses.Length == 0)
 				{
-					Thread.Sleep(10000);
+					await Task.Delay(10000);
 					continue;
 				}
+				using Process osuProcess = osuProcesses[0];
+				
+			while (true)
+			{
 
 				if (sockets.Count == 0)
 				{
-					Thread.Sleep(5000);
+					await Task.Delay(5000);
 					continue;
 				}
 
-				using Process osu_process = osu_processes[0];
-
 				try
 				{
-					string data = Calculations.Calculation.GetData(Path.GetDirectoryName(osu_process.MainModule.FileName),
-						osu_process.MainWindowTitle);
+					string data = Calculations.Calculation.GetData(Path.GetDirectoryName(osuProcess.MainModule.FileName));
 
 					foreach (IWebSocketConnection socket in sockets) await socket.Send(data);
 					;
@@ -146,7 +143,9 @@ namespace osucket
 						Console.WriteLine("An unknown error has occurred. Ignoring...");
 				}
 
-				Thread.Sleep(timer);
+				await Task.Delay(timer);
+			}
+			
 			}
 		}
 	}
