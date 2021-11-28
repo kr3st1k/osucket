@@ -11,6 +11,7 @@ namespace osucket.Calculations.Models
 		public int Count100 { get; set; }
 		public int Count50 { get; set; }
 		public int CountMiss { get; set; }
+		public int CountSliderBreaks { get; set; }
 		public int CountGeki { get; set; }
 		public int CountKatu { get; set; }
 		public int Combo { get; set; }

@@ -7,10 +7,12 @@
 		public int CountMouseLeft { get; set; }
 		public int CountMouseRight { get; set; }
 		
-		public bool CountPressedKeyLeft { get; set; }
-		public bool CountPressedKeyRight { get; set; }
-		public bool CountPressedMouseLeft { get; set; }
-		public bool CountPressedMouseRight { get; set; }
+		public bool PressedKeyLeft { get; set; }
+		public bool PressedKeyRight { get; set; }
+		public bool PressedMouseLeft { get; set; }
+		public bool PressedMouseRight { get; set; }
+
+		public bool IsEnabled { get; set; }
 
 	}
 }
