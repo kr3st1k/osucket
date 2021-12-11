@@ -20,7 +20,7 @@ namespace osucket
 				"                                                                   \r\n                                                                  \r\n                                       `7MM                 mm    \r\n                                         MM                 MM    \r\n ,pW\"Wq.  ,pP\"Ybd `7MM  `7MM   ,p6\"bo    MM  ,MP' .gP\"Ya  mmMMmm  \r\n6W'   `Wb 8I   `\"   MM    MM  6M'  OO    MM ;Y   ,M'   Yb   MM    \r\n8M     M8 `YMMMa.   MM    MM  8M         MM;Mm   8M\"\"\"\"\"\"   MM    \r\nYA.   ,A9 L.   I8   MM    MM  YM.    ,   MM `Mb. YM.    ,   MM    \r\n `Ybmd9'  M9mmmP'   `Mbod\"YML. YMbmd'  .JMML. YA. `Mbmmd'   `Mbmo \r\n                                                                  \r\n                                                                  ");
 			var port = 13371;
 			var timer = 500;
-			var showErrors = true;
+			var showErrors = false;
 			Environment.GetCommandLineArgs().ToList().ForEach(x =>
 			{
 				if (x.EndsWith("/?") || x.EndsWith("?") || x.EndsWith("-h") || x.EndsWith("--h") ||

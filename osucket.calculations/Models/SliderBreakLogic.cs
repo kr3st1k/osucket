@@ -1,6 +1,6 @@
 ﻿namespace osucket.Calculations.Models
 {
-    internal class SliderBreaks
+    internal static class SliderBreaks
     {
         public static int SliderBreaksCount { get; set; }
 
@@ -13,15 +13,13 @@
             SliderBreaksCount = 0;
             LastMissCount = 0;
         }
-        public static int GetSliderBreaks(ushort missCount, ushort combo)
+        public static void GetSliderBreaks(ushort missCount, ushort combo)
         {
             if (LastMissCount == missCount && LastCombo > combo)
                 SliderBreaksCount++;
 
             LastMissCount = missCount;
             LastCombo = combo;
-
-            return SliderBreaksCount;
         }
     }
 }

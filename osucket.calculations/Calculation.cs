@@ -136,9 +136,8 @@ namespace osucket.Calculations
                     // PPCalculator calculator = PpCalculatorHelpers.GetPpCalculator(general.MenuRuleSet);
                     currentBeatMap = new WorkingBeatmap(ruleSet.CreateBeatmapConverter(playableBeatMap).Convert());
                 }
-
-                var laserMods = GetMods(((Mods) general.MenuMods).ToString().Split(","), ruleSet);
-                general.MapDifficulty = DiffCalculator.GetStarRate(laserMods, currentBeatMap, ruleSet);
+                general.MapDifficulty = DiffCalculator.GetStarRate(GetMods(((Mods) general.MenuMods).ToString()
+                    .Split(","), ruleSet), currentBeatMap, ruleSet);
             }
 
 
@@ -146,10 +145,10 @@ namespace osucket.Calculations
             {
                 case OsuMemoryStatus.Playing:
                 {
-                    // if (structuredOsuMemoryReader.TryRead(_osuData.LeaderBoard))
-                    // {
-                    //     var hLeaderBoard = _osuData.LeaderBoard;
-                    // }
+                    if (structuredOsuMemoryReader.TryRead(_osuData.LeaderBoard))
+                    {
+                        gamePlay.RawLeaderboard = _osuData.LeaderBoard;
+                    }
 
                     if (structuredOsuMemoryReader.TryRead(_osuData.Player))
                     {
