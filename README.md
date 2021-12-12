@@ -26,6 +26,8 @@
 
 - [@ve3xone](https://www.github.com/ve3xone)
 
+- [@oSumAtrIX](https://www.github.com/oSumAtrIX)
+
 # Special Thanks to:
 
 * [Piotrekol](https://github.com/Piotrekol/) and his [ProcessMemoryDataFinder](https://github.com/Piotrekol/ProcessMemoryDataFinder) for getting memory values
