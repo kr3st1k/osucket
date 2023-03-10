@@ -8,27 +8,11 @@ jobs:
   build:
     name: Submodule update
     runs-on: ubuntu-latest
-    env:
-      PARENT_REPOSITORY: 'kr3st1k/osucket'
-      CHECKOUT_BRANCH: 'main'
-      PR_AGAINST_BRANCH: 'main'
-      OWNER: 'kr3st1k'
-
     steps:
-      ##########################
-      # Checkout the code base #
-      ##########################
-      - uses: actions/checkout@master
-
-      ####################################
-      # Run the action against code base #
-      ####################################
       - name: run action
         id: run_action
-        uses: releasehub-com/github-action-create-pr-parent-submodule@v1
+        uses: PaulRitter/github-action-create-commit-parent-submodule@v1
         with:
-          github_token: ${{ secrets.RELEASE_HUB_SECRET }}
-          parent_repository: ${{ env.PARENT_REPOSITORY }}
-          checkout_branch: ${{ env.CHECKOUT_BRANCH}}
-          pr_against_branch: ${{ env.PR_AGAINST_BRANCH }}
-          owner: ${{ env.OWNER }}
+          github_token: ${{ secrets.GH_ACTIONS_TOKEN }}
+          parent_repository: kr3st1k/osucket
+          parent_branch: main
