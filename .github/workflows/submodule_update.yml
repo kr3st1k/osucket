@@ -13,6 +13,6 @@ jobs:
         id: run_action
         uses: PaulRitter/github-action-create-commit-parent-submodule@v1
         with:
-          github_token: ${{ secrets.GH_ACTIONS_TOKEN }}
+          github_token: ${{ secrets.token }}
           parent_repository: kr3st1k/osucket
           parent_branch: main
